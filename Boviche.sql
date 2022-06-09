@@ -186,6 +186,11 @@ CREATE TABLE Bovino
 	
 );
 
+--se agregan valores default en la tabla bovino FechaIngreso y idEmpresa
+ALTER TABLE Bovino Add DEFAULT (getdate()) for FechaIngreso;
+
+ALTER TABLE Bovino Add DEFAULT (112) for idEmpresa;
+
 --create tabla Vacunacion --
 
 IF OBJECT_ID('Vacunacion', 'U') IS NOT NULL  
@@ -231,9 +236,6 @@ CREATE TABLE Tipo
 		FOREIGN KEY (idTipo) REFERENCES Vacunacion,
 );
 go
-
-
-
 
 
 --create tabla Producto --
@@ -935,6 +937,7 @@ CREATE TABLE medidas_corporales
 );
 go
 
+
 --*************************tabla de medidas_bovinos****************************
 IF OBJECT_ID('medidas_bovinos', 'U') IS NOT NULL  
    DROP TABLE medidas_bovinos;  
@@ -946,16 +949,14 @@ CREATE TABLE medidas_bovinos
 	CONSTRAINT PK_medidas_bovinos_fecha_id_bovino
 		PRIMARY KEY(fecha, id_bovino),
 	CONSTRAINT FK_medidas_bovinos_id_bovino
-		FOREIGN KEY (id_bovino) REFERENCES Bovino(id_Bovino),
+		FOREIGN KEY (id_bovino) REFERENCES Bovino(id_Bovino) ON UPDATE CASCADE ON DELETE CASCADE,
 	CONSTRAINT FK_medidas_bovinos_fecha
 		FOREIGN KEY (fecha) REFERENCES medidas_corporales(fecha),
 );
 go
+
+
 --*************************tabla de reproduccion****************************
-
-
-
-
 IF OBJECT_ID('reproduccion', 'U') IS NOT NULL  
    DROP TABLE reproduccion;  
 go
@@ -981,7 +982,7 @@ CREATE TABLE reproduccion_bovinos
 	CONSTRAINT PK_reproduccion_bovinos_id_reproduccion_id_bovino
 		PRIMARY KEY(id_reproduccion,id_Bovino),
 	CONSTRAINT FK_reproduccion_bovinos_id_reproduccion
-		FOREIGN KEY (id_reproduccion) REFERENCES reproduccion(id_reproduccion),
+		FOREIGN KEY (id_reproduccion) REFERENCES reproduccion(id_reproduccion)  ON UPDATE CASCADE ON DELETE CASCADE,
 	CONSTRAINT FK_reproduccion_bovinos_id_Bovino
 		FOREIGN KEY (id_Bovino) REFERENCES Bovino(id_Bovino),
 );
@@ -1014,7 +1015,7 @@ CREATE TABLE preñez
 	CONSTRAINT PK_preñez_id_preñez
 		PRIMARY KEY(id_preñez),
 	CONSTRAINT FK_preñez_id_preñez
-		FOREIGN KEY (id_preñez) REFERENCES reproduccion(id_reproduccion),
+		FOREIGN KEY (id_preñez) REFERENCES reproduccion(id_reproduccion)  ON UPDATE CASCADE ON DELETE CASCADE,
 	CONSTRAINT FK_preñez_id_bovino
 		FOREIGN KEY (id_bovino) REFERENCES Bovino(id_Bovino),
 	CONSTRAINT FK_preñez_tipo_fecu
@@ -1036,7 +1037,7 @@ CREATE TABLE servicios
 	CONSTRAINT PK_servicios_id_servicio
 		PRIMARY KEY(id_servicio),
 	CONSTRAINT FK_servicios_id_servicio
-		FOREIGN KEY (id_servicio) REFERENCES reproduccion(id_reproduccion),
+		FOREIGN KEY (id_servicio) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
 	CONSTRAINT FK_servicios_id_preñez
 		FOREIGN KEY (id_preñez) REFERENCES preñez(id_preñez),
 
@@ -1098,7 +1099,7 @@ CREATE TABLE partos
 	CONSTRAINT PK_partos_id_partos
 		PRIMARY KEY(id_partos),
 	CONSTRAINT FK_partos_id_partos
-		FOREIGN KEY (id_partos) REFERENCES reproduccion(id_reproduccion),
+		FOREIGN KEY (id_partos) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
 	CONSTRAINT FK_partos_id_sexo
 		FOREIGN KEY (id_sexo) REFERENCES sexo(id_sexo),
 	CONSTRAINT FK_partos_id_parto
@@ -1119,7 +1120,7 @@ CREATE TABLE partos_bovinos
 	CONSTRAINT PK_partos_bovinos_id_partos_id_bovino
 		PRIMARY KEY(id_partos,id_Bovino),
 	CONSTRAINT FK_partos_bovinos_id_partos
-		FOREIGN KEY (id_partos) REFERENCES partos(id_partos),
+		FOREIGN KEY (id_partos) REFERENCES partos(id_partos) ON UPDATE CASCADE ON DELETE CASCADE,
 	CONSTRAINT FK_partos_bovinos_id_Bovino
 		FOREIGN KEY (id_Bovino) REFERENCES Bovino(id_Bovino),
 );
@@ -1135,7 +1136,7 @@ CREATE TABLE celos
 	CONSTRAINT PK_celos_id_celos
 		PRIMARY KEY(id_celos),
 	CONSTRAINT FK_celos_id_celos
-		FOREIGN KEY (id_celos) REFERENCES reproduccion(id_reproduccion),
+		FOREIGN KEY (id_celos) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
 	
 );
 go
@@ -2043,85 +2044,6 @@ AS
 	where id_partos=@id_partos
 go
 
-
-
-
-go
-ALTER TABLE reproduccion Add DEFAULT (current_timestamp) for fecha_registro;
-
-alter table servicios alter column numero_servicio TINYINT;
-
-ALTER TABLE Bovino Add DEFAULT (getdate()) for FechaIngreso;
-go
-
-go
-alter table medidas_bovinos drop constraint FK_medidas_bovinos_id_bovino;
-
-alter table medidas_bovinos add
-	constraint FK_medidas_bovinos_id_bovino
-	foreign key (id_Bovino) references Bovino ON UPDATE CASCADE ON DELETE CASCADE;
-go
-
-
-alter table medidas_bovinos add
-	constraint FK_medidas_bovinos_id_bovino
-	foreign key (id_Bovino) references Bovino ON UPDATE CASCADE ON DELETE CASCADE;
-go
-
-
-ALTER TABLE Bovino Add DEFAULT (getdate()) for FechaIngreso;
-
-ALTER TABLE Bovino Add DEFAULT (112) for idEmpresa;
-
-
-go
-alter table servicios drop constraint FK_servicios_id_servicio;
-
-alter table servicios add
-	constraint FK_servicios_id_servicio
-	foreign key (id_servicio) references reproduccion (id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE;
-go
-
-go
-alter table servicios drop constraint FK_servicios_id_preñez;
-
-alter table servicios add
-	constraint FK_servicios_id_preñez
-	foreign key (id_preñez) references preñez (id_preñez)
-go
-
-go
-alter table celos drop constraint FK_celos_id_celos;
-
-alter table celos add
-	constraint FK_celos_id_celos
-	foreign key (id_celos) references reproduccion (id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE;
-go
-
-go
-alter table preñez drop constraint FK_preñez_id_preñez;
-
-alter table preñez add
-	constraint FK_preñez_id_preñez
-	foreign key (id_preñez) references reproduccion ON UPDATE CASCADE ON DELETE CASCADE;
-go
-
-
-go
-alter table partos drop constraint FK_partos_id_partos;
-
-alter table partos add
-	constraint FK_partos_id_partos
-	foreign key (id_partos) references reproduccion (id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE;
-go
-
-go
-alter table partos_bovinos drop constraint FK_partos_bovinos_id_partos;
-
-alter table partos_bovinos add
-	constraint FK_partos_bovinos_id_partos
-	foreign key (id_partos) references reproduccion (id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE;
-go
 
 
 /*Vista de la info de celos de los vacas*/
