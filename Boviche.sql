@@ -191,6 +191,7 @@ ALTER TABLE Bovino Add DEFAULT (getdate()) for FechaIngreso;
 
 ALTER TABLE Bovino Add DEFAULT (112) for idEmpresa;
 
+
 --create tabla Vacunacion --
 
 IF OBJECT_ID('Vacunacion', 'U') IS NOT NULL  
