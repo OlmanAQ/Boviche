@@ -1295,6 +1295,7 @@ INSERT INTO reproduccion_bovinos(id_reproduccion,id_Bovino)
 
 go
 
+
 /*Procedimiento de upd_reproduccion*/
 go
 CREATE PROCEDURE upd_reproduccion
@@ -1586,28 +1587,7 @@ AS
 go
 
 
-/***************Trigger: Valida que un bovino_padre no puede ser hembra***********************/
-go
-create or alter trigger dbo.trigger_validar_bovino_padre
-on preñez
-for insert,update
-as
-	declare
-		@id_bovino_padre int,
-		@id_sexo TINYINT;
-		set @id_bovino_padre=(select id_bovino from inserted);
-		set @id_sexo=(select idSexo from Bovino where id_Bovino=@id_bovino_padre);
 
-	if (@id_sexo=0)
-	begin
-		RAISERROR('Estoy ejecutando el trigger y voy a rechazar la transacción por que el padre no es macho',16,1)
-		rollback;
-	end
-	else
-	begin
-		print ('Registrado la preñez del bovino')		
-	end;
-go
 
 go
 insert into tipo_fecu(tipo_fecu,fecundacion) values 
@@ -2055,13 +2035,34 @@ go
 		end
  go
 
+ /***************Trigger: Valida que un bovino_padre no puede ser hembra***********************/
+go
+create or alter trigger dbo.trigger_validar_bovino_padre
+on preñez
+for insert,update
+as
+	declare
+		@id_bovino_padre int,
+		@id_sexo TINYINT;
+		set @id_bovino_padre=(select id_bovino from inserted);
+		set @id_sexo=(select idSexo from Bovino where id_Bovino=@id_bovino_padre);
 
+	if (@id_sexo=0)
+	begin
+		RAISERROR('Estoy ejecutando el trigger y voy a rechazar la transacción por que el padre no es macho',16,1)
+		rollback;
+	end
+	else
+	begin
+		print ('Registrado la preñez del bovino')		
+	end;
+go
 
 --Cursor 1
 
 --indice 1
-
-
+go
+select*from bovino
 
 
 
