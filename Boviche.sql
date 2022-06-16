@@ -97,44 +97,14 @@ CREATE TABLE horario
 		check	(especificacion in ('M','T', 'N'))
 );
 go	
+
 select * from horario;
+GO
 
 ALTER TABLE horario Add DEFAULT ('M') for especificacion;
-
-
---************************Inserciones sobre Horario*********************
-SET IDENTITY_INSERT horario ON;
-insert into horario (horario, especificacion)
-	values 
-		(8,'M'),
-		(1,'T'),
-		(2,'N')
-
-SET IDENTITY_INSERT horario OFF;
---values ('Mañana',0),('Tarde',1),('Noche',2);
-
---************************Inserciones sobre usuario*********************
-insert into usuario (nombreUsuario, idEmpresa,contraseña)
-	values ('Ratatopo', 112, 'ratarata'),
-		   ('Tynox08', 112, 'tyty08'),
-		   ('Alien', 112, 'Alienol'),
-		   ('admin', 112, '1234');
-
-	select * from Producto;
-
---************************Inserciones sobre pesas*********************
-
-insert into pesas (horario, fecha,kilos_Kl)
-	values (1, '15-02-2022', 150);
-
---************************Inserciones sobre produccion*********************
-
-insert into produccion(fecha, total,idBovino)
-	values (1, '15-02-2022', 150);
-
-
+GO
 --create tabla Raza--
-
+GO
 IF OBJECT_ID('Raza', 'U') IS NOT NULL  
    DROP TABLE Raza;  
 go
@@ -185,12 +155,12 @@ CREATE TABLE Bovino
 	
 	
 );
-
+GO
 --se agregan valores default en la tabla bovino FechaIngreso y idEmpresa
 ALTER TABLE Bovino Add DEFAULT (getdate()) for FechaIngreso;
 
 ALTER TABLE Bovino Add DEFAULT (112) for idEmpresa;
-
+GO
 
 --create tabla Vacunacion --
 
@@ -349,6 +319,286 @@ CREATE TABLE Enfermedades_Producto
 		FOREIGN KEY (Nombre) REFERENCES Producto,
 );
 go
+
+
+--*************************tabla de medidas_corporales****************************
+IF OBJECT_ID('medidas_corporales', 'U') IS NOT NULL  
+   DROP TABLE medidas_corporales;  
+go
+CREATE TABLE medidas_corporales
+(
+	fecha	DATE NOT NULL,
+	condicion	VARCHAR(10) NULL,
+	peso	INT  NULL,
+	CONSTRAINT PK_medidas_corporales_fecha
+		PRIMARY KEY(fecha),
+	
+);
+go
+
+
+--*************************tabla de medidas_bovinos****************************
+IF OBJECT_ID('medidas_bovinos', 'U') IS NOT NULL  
+   DROP TABLE medidas_bovinos;  
+go
+CREATE TABLE medidas_bovinos
+(
+	fecha	DATE NOT NULL,
+	id_bovino	INT NOT NULL,
+	CONSTRAINT PK_medidas_bovinos_fecha_id_bovino
+		PRIMARY KEY(fecha, id_bovino),
+	CONSTRAINT FK_medidas_bovinos_id_bovino
+		FOREIGN KEY (id_bovino) REFERENCES Bovino(id_Bovino) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT FK_medidas_bovinos_fecha
+		FOREIGN KEY (fecha) REFERENCES medidas_corporales(fecha),
+);
+go
+
+
+--*************************tabla de reproduccion****************************
+IF OBJECT_ID('reproduccion', 'U') IS NOT NULL  
+   DROP TABLE reproduccion;  
+go
+CREATE TABLE reproduccion
+(
+	id_reproduccion INT identity (1,1) NOT NULL ,
+	fecha_registro	DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	CONSTRAINT PK_reproduccion_id_reproduccion
+		PRIMARY KEY(id_reproduccion),
+	CONSTRAINT UNK_reproduccion_fecha_registro
+		UNIQUE (fecha_registro),
+	
+);
+go
+--*************************tabla de reproduccion_bovinos****************************
+IF OBJECT_ID('reproduccion_bovinos', 'U') IS NOT NULL  
+   DROP TABLE reproduccion_bovinos;  
+go
+CREATE TABLE reproduccion_bovinos
+(
+	id_reproduccion INT NOT NULL,
+	id_Bovino	INT NOT NULL,
+	CONSTRAINT PK_reproduccion_bovinos_id_reproduccion_id_bovino
+		PRIMARY KEY(id_reproduccion,id_Bovino),
+	CONSTRAINT FK_reproduccion_bovinos_id_reproduccion
+		FOREIGN KEY (id_reproduccion) REFERENCES reproduccion(id_reproduccion)  ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT FK_reproduccion_bovinos_id_Bovino
+		FOREIGN KEY (id_Bovino) REFERENCES Bovino(id_Bovino),
+);
+go
+--*************************tabla de tipo_fecu****************************
+IF OBJECT_ID('tipo_fecu', 'U') IS NOT NULL  
+   DROP TABLE tipo_fecu;  
+go
+CREATE TABLE tipo_fecu
+(
+	tipo_fecu	TINYINT  NOT NULL,
+	fecundacion VARCHAR(20) NOT NULL,
+	CONSTRAINT PK_tipo_fecu_tipo
+		PRIMARY KEY(tipo_fecu),
+	CONSTRAINT UNK_tipo_fecu_fecundacion
+		UNIQUE (fecundacion),	
+);
+go
+--*************************tabla de preñez****************************
+IF OBJECT_ID('preñez', 'U') IS NOT NULL  
+   DROP TABLE preñez;  
+go
+CREATE TABLE preñez
+(
+	id_preñez INT NOT NULL,
+	id_bovino	INT   NULL,
+	dias_preñez	INT  NOT NULL,
+	posible_fecha_parto DATE NULL,
+	tipo_fecu	TINYINT  NULL,
+	CONSTRAINT PK_preñez_id_preñez
+		PRIMARY KEY(id_preñez),
+	CONSTRAINT FK_preñez_id_preñez
+		FOREIGN KEY (id_preñez) REFERENCES reproduccion(id_reproduccion)  ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT FK_preñez_id_bovino
+		FOREIGN KEY (id_bovino) REFERENCES Bovino(id_Bovino),
+	CONSTRAINT FK_preñez_tipo_fecu
+		FOREIGN KEY (tipo_fecu) REFERENCES tipo_fecu(tipo_fecu),
+
+	
+);
+go
+--*************************tabla de servicios****************************
+IF OBJECT_ID('servicios', 'U') IS NOT NULL  
+   DROP TABLE servicios;  
+go
+CREATE TABLE servicios
+(
+	id_servicio INT NOT NULL,
+	comentario	VARCHAR(40)  NULL,
+	numero_servicio	INT  NULL,
+	id_preñez INT NULL,
+	CONSTRAINT PK_servicios_id_servicio
+		PRIMARY KEY(id_servicio),
+	CONSTRAINT FK_servicios_id_servicio
+		FOREIGN KEY (id_servicio) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT FK_servicios_id_preñez
+		FOREIGN KEY (id_preñez) REFERENCES preñez(id_preñez),
+
+);
+go
+--*************************tabla de sexo****************************
+IF OBJECT_ID('sexo', 'U') IS NOT NULL  
+   DROP TABLE sexo;  
+go
+CREATE TABLE sexo
+(
+	id_sexo	TINYINT  NOT NULL,
+	sexo_animal CHAR(1) NOT NULL,
+	CONSTRAINT PK_sexo_id_sexo
+		PRIMARY KEY(id_sexo),
+	CONSTRAINT UNK_sexo_sexo_animal 
+		UNIQUE (sexo_animal),	
+);
+go
+--*************************tabla de tipo_parto****************************
+IF OBJECT_ID('tipo_parto', 'U') IS NOT NULL  
+   DROP TABLE tipo_parto;  
+go
+CREATE TABLE tipo_parto
+(
+	id_parto	TINYINT  NOT NULL,
+	tipo_parto	CHAR(1) NOT NULL,
+	CONSTRAINT PK_tipo_parto_id_parto
+		PRIMARY KEY(id_parto),
+	CONSTRAINT UNK_tipo_parto_id_parto
+		UNIQUE (tipo_parto),	
+);
+go
+--*************************tabla de estado_parto****************************
+IF OBJECT_ID('estado_parto', 'U') IS NOT NULL  
+   DROP TABLE estado_parto;  
+go
+CREATE TABLE estado_parto
+(
+	id_estado	TINYINT  NOT NULL,
+	estado_parto	CHAR(1) NOT NULL,
+	CONSTRAINT PK_estado_parto_id_estado
+		PRIMARY KEY(id_estado),
+	CONSTRAINT UNK_estado_parto_estado_parto
+		UNIQUE (estado_parto),	
+);
+go
+--*************************tabla de partos****************************
+IF OBJECT_ID('partos', 'U') IS NOT NULL  
+   DROP TABLE partos;  
+go
+CREATE TABLE partos
+(
+	id_partos	INT NOT NULL,
+	id_sexo		TINYINT  NULL,
+	comentario	VARCHAR(40)  NULL,
+	id_parto	TINYINT NULL,
+	id_estado	TINYINT NULL,
+	CONSTRAINT PK_partos_id_partos
+		PRIMARY KEY(id_partos),
+	CONSTRAINT FK_partos_id_partos
+		FOREIGN KEY (id_partos) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT FK_partos_id_sexo
+		FOREIGN KEY (id_sexo) REFERENCES sexo(id_sexo),
+	CONSTRAINT FK_partos_id_parto
+		FOREIGN KEY (id_parto) REFERENCES tipo_parto(id_parto),
+	CONSTRAINT FK_partos_id_estado
+		FOREIGN KEY (id_estado) REFERENCES estado_parto(id_estado),
+
+);
+go
+--*************************tabla de partos_bovinos****************************
+IF OBJECT_ID('partos_bovinos', 'U') IS NOT NULL  
+   DROP TABLE partos_bovinos;  
+go
+CREATE TABLE partos_bovinos
+(
+	id_partos	INT NOT NULL,
+	id_Bovino		INT NOT NULL,
+	CONSTRAINT PK_partos_bovinos_id_partos_id_bovino
+		PRIMARY KEY(id_partos,id_Bovino),
+	CONSTRAINT FK_partos_bovinos_id_partos
+		FOREIGN KEY (id_partos) REFERENCES partos(id_partos) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT FK_partos_bovinos_id_Bovino
+		FOREIGN KEY (id_Bovino) REFERENCES Bovino(id_Bovino),
+);
+go
+--*************************tabla de celos****************************
+IF OBJECT_ID('celos', 'U') IS NOT NULL  
+   DROP TABLE celos;  
+go
+CREATE TABLE celos
+(
+	id_celos INT NOT NULL,
+	detalle	VARCHAR(40)  NULL
+	CONSTRAINT PK_celos_id_celos
+		PRIMARY KEY(id_celos),
+	CONSTRAINT FK_celos_id_celos
+		FOREIGN KEY (id_celos) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
+	
+);
+go
+
+
+--************************Inserciones sobre Horario*********************
+SET IDENTITY_INSERT horario ON;
+insert into horario (horario, especificacion)
+	values 
+		(8,'M'),
+		(1,'T'),
+		(2,'N')
+
+SET IDENTITY_INSERT horario OFF;
+--values ('Mañana',0),('Tarde',1),('Noche',2);
+
+--************************Inserciones sobre usuario*********************
+insert into usuario (nombreUsuario, idEmpresa,contraseña)
+	values ('Ratatopo', 112, 'ratarata'),
+		   ('Tynox08', 112, 'tyty08'),
+		   ('Alien', 112, 'Alienol'),
+		   ('admin', 112, '1234');
+
+	select * from Producto;
+
+--************************Inserciones sobre pesas*********************
+
+insert into pesas (horario, fecha,kilos_Kl)
+	values (1, '15-02-2022', 150);
+
+--************************Inserciones sobre produccion*********************
+
+insert into produccion(fecha, total,idBovino)
+	values (1, '15-02-2022', 150);
+GO
+
+select * from pesas
+
+select * from produccion
+
+select * from horario
+go
+--Insertar valores en Produccion 
+insert into produccion values ('2000-08-09',34,1)
+insert into produccion values ('2000-09-09',32,1)
+insert into produccion values ('2000-10-09',28,2)
+insert into produccion values ('2000-11-09',37,2)
+insert into produccion values ('2000-08-08',34,3)
+insert into produccion values ('2000-09-08',32,3)
+insert into produccion values ('2000-10-08',28,5)
+insert into produccion values ('2000-11-08',37,7)
+go
+
+--Insertar valores en Pesas
+
+insert into pesas values (12,'2000-08-09',10)
+insert into pesas values (24,'2000-08-09',8)
+insert into pesas values (13,'2000-10-08',10)
+insert into pesas values (23,'2000-08-09',8)
+insert into pesas values (15,'2000-11-08',10)
+insert into pesas values (26,'2000-11-08',8)
+GO
+
 
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
@@ -722,425 +972,14 @@ DELETE FROM Enfermedades_Bovinos WHERE idBovino = 3 and Fecha = '06-06-2021'
 Update Enfermedades_Bovinos
 	set Fecha = '06-06-2021'
 	where idBovino = 2
+GO
 
+GO
 --Mostrar todas idBovino del 2000 al 2010
 select * from Enfermedades_Bovinos where Fecha > '01-01-2000' and Fecha < '31-12-2010'
+GO
 
 
-
---Vistas 
-
---Selecciona toda la infromacion de las Enfermedades Bovinos que ha tenido cada bovino
-go
-Create view EnfermedadesBovinos as
-	Select Bovi.id_Bovino,Bovi.Nombre, Enf.Fecha,Enf.Diagnostico,Enf.Comentario,Enf.Nombre_Sintoma from
-	(select b.id_Bovino,b.Nombre,b.idSexo,b.Color,b.Edad,b.Raza,b.FechaNacimiento,c.NombreColor,r.NombreRaza,eb.Fecha from Bovino as b 
-	inner join Color as c on (b.Color = c.Color)inner join Raza as r on (b.Raza = r.Raza) inner join 
-	Enfermedades_Bovinos as eb on (b.id_Bovino = eb.idBovino)) as Bovi inner join 
-
-	(Select e.Comentario,e.Diagnostico,e.Fecha,s.Nombre_Sintoma from Enfermedades as e inner join Sintomas as s on (e.Fecha = s.Fecha) inner join
-	Nombre_Sintomas as ns on (ns.Nombre_Sintoma = s.Nombre_Sintoma)) as Enf on (Bovi.Fecha = Enf.Fecha) 
-
-go
-
-
---Crear una vista donde se vea solo las vacas y que tuvieron una enfermedad con su debido  diagnosticos
-go
-Create view HembrasDiagnosticos as
-Select Bovi.id_Bovino,Bovi.Nombre,Bovi.idSexo, Enf.Fecha,Enf.Diagnostico from
-	(select b.id_Bovino,b.Nombre,b.idSexo,b.Color,b.Edad,b.Raza,b.FechaNacimiento,c.NombreColor,r.NombreRaza,eb.Fecha from Bovino as b 
-	inner join Color as c on (b.Color = c.Color)inner join Raza as r on (b.Raza = r.Raza) inner join 
-	Enfermedades_Bovinos as eb on (b.id_Bovino = eb.idBovino)) as Bovi inner join 
-
-	(Select e.Comentario,e.Diagnostico,e.Fecha,s.Nombre_Sintoma from Enfermedades as e inner join Sintomas as s on (e.Fecha = s.Fecha) inner join
-	Nombre_Sintomas as ns on (ns.Nombre_Sintoma = s.Nombre_Sintoma)) as Enf on (Bovi.Fecha = Enf.Fecha ) where idSexo = 0
-
-go
-
-
---Comando que se utiliza para mostrar la vista creada
-select * from HembrasDiagnosticos
-
-select * from EnfermedadesBovinos
-
-------------------------------------------------------------------------------------------------------------------------------------------
---Consultas 
-
-
---Seleccionar todo la informacion de todos los Bovinos que se inyectaron  'Para parasitos ext e int' o 'Para parasitos ext'
-Select Bo.*  from 
-	(select b.Color,b.Edad,b.FechaIngreso,b.FechaNacimiento,b.id_Bovino,b.idSexo,b.Nombre,b.Raza,c.NombreColor,r.NombreRaza,vb.idVacunacion
-	from Bovino as b inner join Raza as r on (b.Raza = r.Raza) inner join Color as c on (b.Color = c.Color) inner join 
-	Vacunacion_Bovino as vb ON (b.id_Bovino = vb.idBovino)) as Bo inner join 
-
-
-	(select v.idTipo,v.idVacunacion,t.TipoVacunacion,pv.Nombre,p.Detalle from Vacunacion as v inner join Tipo as t on (v.idVacunacion = t.idTipo) inner join 
-	Producto_Vacunacion as pv on(v.idVacunacion = pv.idVacunacion) inner join Producto as p on (pv.Nombre = p.Nombre)) as Vacu on (Bo.idVacunacion = Vacu.idVacunacion )
-	where Vacu.Detalle = 'Para parasitos ext' or Vacu.Detalle = 'Para parasitos ext e int'
-
---Seleccionar El id,Nombre, raza ,Color,sexo   de todos los animales que se hayan vacunado con el producto Piroflox
-Select Bo.id_Bovino,Bo.Nombre,Bo.NombreRaza,Bo.NombreColor,Bo.idSexo from 
-	(select b.Color,b.Edad,b.FechaIngreso,b.FechaNacimiento,b.id_Bovino,b.idSexo,b.Nombre,b.Raza,c.NombreColor,r.NombreRaza,vb.idVacunacion
-	from Bovino as b inner join Raza as r on (b.Raza = r.Raza) inner join Color as c on (b.Color = c.Color) inner join 
-	Vacunacion_Bovino as vb ON (b.id_Bovino = vb.idBovino)) as Bo inner join 
-
-
-	(select v.idTipo,v.idVacunacion,t.TipoVacunacion,pv.Nombre,p.Detalle from Vacunacion as v inner join Tipo as t on (v.idVacunacion = t.idTipo) inner join 
-	Producto_Vacunacion as pv on(v.idVacunacion = pv.idVacunacion) inner join Producto as p on (pv.Nombre = p.Nombre)) as Vacu on (Bo.idVacunacion = Vacu.idVacunacion )
-	where Vacu.Nombre = 'Piroflox'
-
-
---Triggers 
---Validar que la base de datos solo tenga registro de una unica empresa
-
-go
- create or alter trigger ValidarCantidadEmpresas
-  on  empresa 
-  for insert, update 
-  as
-		declare
-		@Cant_Empresas tinyint,
-		@empresa tinyint;
-
-		set @empresa = (select idEmpresa from inserted);
-		set @Cant_Empresas= (select count(*) from empresa)
-
-		if (@Cant_Empresas > 1)
-		begin
-			RAISERROR('Transaccion denegada debido a que ya existen la única empresa  posible',16,1)
-		rollback;
-		end
-		else
-		begin
-			print('Registro completado')
-		end
- go
-
-
-
-
-
---Validar que solo puedan existir 3 registros de usuarios en el sistema 
-go
- create or alter trigger ValidarCantidadUsuarios
-  on  usuario 
-  for insert, update 
-  as
-		declare
-		@Cant_Usuarios tinyint,
-		@usuario varchar(10);
-
-		set @usuario = (select nombreUsuario from inserted);
-		set @Cant_Usuarios= (select count(*) from usuario)
-
-		if (@Cant_Usuarios > 4)
-		begin
-			RAISERROR('Transaccion denegada debido a que ya existen los 4 posibles registros',16,1)
-		rollback;
-		end
-		else
-		begin
-			print('Registro completado')
-		end
- go
-
-
-
---Cursor 1
-
---indice 1
-
-
-
---Reglas especificas para las tablas
-
---Se crea una regla para que en el campo de sexo solo se puedan ingresar ''H','M'
-go
-create rule DatosSexo as @sexo in ('H','M')
-go
-
---ahora se vinvula con una tabla en especifico
-
-EXEC sp_bindrule 	'DatosSexo',	'Sexo.sexo_animal'
-
---Crear una regla para Colores 
-go
-create rule DatosColor as @Color between 0 and 8
-go
-
-EXEC sp_bindrule 	'DatosColor',	'Color.Color'
-
-
---Crear una regla para Raza
-go
-create rule DatosRaza as @Raza between 0 and 5
-go
-EXEC sp_bindrule 	'DatosRaza',	'Raza.Raza'
-
-
---Crear una regla para Tipo
-go
-create rule DatosTipo as @Tipo in ('D','E')
-go
-EXEC sp_bindrule 	'DatosTipo',	'Tipo.TipoVacunacion'
-
---Crear una regla para TipoPartos
-go
-create rule DatosTipoPartos as @TipoPartos in ('A','C','D','N')
-go
-EXEC sp_bindrule 	'DatosTipoPartos',	'tipo_parto.tipo_parto'
-
-
-
-select * from pesas
-
-select * from produccion
-
-select * from horario
-
---Insertar valores en Produccion 
-insert into produccion values ('2000-08-09',34,1)
-insert into produccion values ('2000-09-09',32,1)
-insert into produccion values ('2000-10-09',28,2)
-insert into produccion values ('2000-11-09',37,2)
-insert into produccion values ('2000-08-08',34,3)
-insert into produccion values ('2000-09-08',32,3)
-insert into produccion values ('2000-10-08',28,5)
-insert into produccion values ('2000-11-08',37,7)
-
-
---Insertar valores en Pesas
-
-insert into pesas values (12,'2000-08-09',10)
-insert into pesas values (24,'2000-08-09',8)
-insert into pesas values (13,'2000-10-08',10)
-insert into pesas values (23,'2000-08-09',8)
-insert into pesas values (15,'2000-11-08',10)
-insert into pesas values (26,'2000-11-08',8)
-
-
-
-
-
-
---*************************tabla de medidas_corporales****************************
-IF OBJECT_ID('medidas_corporales', 'U') IS NOT NULL  
-   DROP TABLE medidas_corporales;  
-go
-CREATE TABLE medidas_corporales
-(
-	fecha	DATE NOT NULL,
-	condicion	VARCHAR(10) NULL,
-	peso	INT  NULL,
-	CONSTRAINT PK_medidas_corporales_fecha
-		PRIMARY KEY(fecha),
-	
-);
-go
-
-
---*************************tabla de medidas_bovinos****************************
-IF OBJECT_ID('medidas_bovinos', 'U') IS NOT NULL  
-   DROP TABLE medidas_bovinos;  
-go
-CREATE TABLE medidas_bovinos
-(
-	fecha	DATE NOT NULL,
-	id_bovino	INT NOT NULL,
-	CONSTRAINT PK_medidas_bovinos_fecha_id_bovino
-		PRIMARY KEY(fecha, id_bovino),
-	CONSTRAINT FK_medidas_bovinos_id_bovino
-		FOREIGN KEY (id_bovino) REFERENCES Bovino(id_Bovino) ON UPDATE CASCADE ON DELETE CASCADE,
-	CONSTRAINT FK_medidas_bovinos_fecha
-		FOREIGN KEY (fecha) REFERENCES medidas_corporales(fecha),
-);
-go
-
-
---*************************tabla de reproduccion****************************
-IF OBJECT_ID('reproduccion', 'U') IS NOT NULL  
-   DROP TABLE reproduccion;  
-go
-CREATE TABLE reproduccion
-(
-	id_reproduccion INT identity (1,1) NOT NULL ,
-	fecha_registro	DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	CONSTRAINT PK_reproduccion_id_reproduccion
-		PRIMARY KEY(id_reproduccion),
-	CONSTRAINT UNK_reproduccion_fecha_registro
-		UNIQUE (fecha_registro),
-	
-);
-go
---*************************tabla de reproduccion_bovinos****************************
-IF OBJECT_ID('reproduccion_bovinos', 'U') IS NOT NULL  
-   DROP TABLE reproduccion_bovinos;  
-go
-CREATE TABLE reproduccion_bovinos
-(
-	id_reproduccion INT NOT NULL,
-	id_Bovino	INT NOT NULL,
-	CONSTRAINT PK_reproduccion_bovinos_id_reproduccion_id_bovino
-		PRIMARY KEY(id_reproduccion,id_Bovino),
-	CONSTRAINT FK_reproduccion_bovinos_id_reproduccion
-		FOREIGN KEY (id_reproduccion) REFERENCES reproduccion(id_reproduccion)  ON UPDATE CASCADE ON DELETE CASCADE,
-	CONSTRAINT FK_reproduccion_bovinos_id_Bovino
-		FOREIGN KEY (id_Bovino) REFERENCES Bovino(id_Bovino),
-);
-go
---*************************tabla de tipo_fecu****************************
-IF OBJECT_ID('tipo_fecu', 'U') IS NOT NULL  
-   DROP TABLE tipo_fecu;  
-go
-CREATE TABLE tipo_fecu
-(
-	tipo_fecu	TINYINT  NOT NULL,
-	fecundacion VARCHAR(20) NOT NULL,
-	CONSTRAINT PK_tipo_fecu_tipo
-		PRIMARY KEY(tipo_fecu),
-	CONSTRAINT UNK_tipo_fecu_fecundacion
-		UNIQUE (fecundacion),	
-);
-go
---*************************tabla de preñez****************************
-IF OBJECT_ID('preñez', 'U') IS NOT NULL  
-   DROP TABLE preñez;  
-go
-CREATE TABLE preñez
-(
-	id_preñez INT NOT NULL,
-	id_bovino	INT   NULL,
-	dias_preñez	INT  NOT NULL,
-	posible_fecha_parto DATE NULL,
-	tipo_fecu	TINYINT  NULL,
-	CONSTRAINT PK_preñez_id_preñez
-		PRIMARY KEY(id_preñez),
-	CONSTRAINT FK_preñez_id_preñez
-		FOREIGN KEY (id_preñez) REFERENCES reproduccion(id_reproduccion)  ON UPDATE CASCADE ON DELETE CASCADE,
-	CONSTRAINT FK_preñez_id_bovino
-		FOREIGN KEY (id_bovino) REFERENCES Bovino(id_Bovino),
-	CONSTRAINT FK_preñez_tipo_fecu
-		FOREIGN KEY (tipo_fecu) REFERENCES tipo_fecu(tipo_fecu),
-
-	
-);
-go
---*************************tabla de servicios****************************
-IF OBJECT_ID('servicios', 'U') IS NOT NULL  
-   DROP TABLE servicios;  
-go
-CREATE TABLE servicios
-(
-	id_servicio INT NOT NULL,
-	comentario	VARCHAR(40)  NULL,
-	numero_servicio	INT  NULL,
-	id_preñez INT NULL,
-	CONSTRAINT PK_servicios_id_servicio
-		PRIMARY KEY(id_servicio),
-	CONSTRAINT FK_servicios_id_servicio
-		FOREIGN KEY (id_servicio) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
-	CONSTRAINT FK_servicios_id_preñez
-		FOREIGN KEY (id_preñez) REFERENCES preñez(id_preñez),
-
-);
-go
---*************************tabla de sexo****************************
-IF OBJECT_ID('sexo', 'U') IS NOT NULL  
-   DROP TABLE sexo;  
-go
-CREATE TABLE sexo
-(
-	id_sexo	TINYINT  NOT NULL,
-	sexo_animal CHAR(1) NOT NULL,
-	CONSTRAINT PK_sexo_id_sexo
-		PRIMARY KEY(id_sexo),
-	CONSTRAINT UNK_sexo_sexo_animal 
-		UNIQUE (sexo_animal),	
-);
-go
---*************************tabla de tipo_parto****************************
-IF OBJECT_ID('tipo_parto', 'U') IS NOT NULL  
-   DROP TABLE tipo_parto;  
-go
-CREATE TABLE tipo_parto
-(
-	id_parto	TINYINT  NOT NULL,
-	tipo_parto	CHAR(1) NOT NULL,
-	CONSTRAINT PK_tipo_parto_id_parto
-		PRIMARY KEY(id_parto),
-	CONSTRAINT UNK_tipo_parto_id_parto
-		UNIQUE (tipo_parto),	
-);
-go
---*************************tabla de estado_parto****************************
-IF OBJECT_ID('estado_parto', 'U') IS NOT NULL  
-   DROP TABLE estado_parto;  
-go
-CREATE TABLE estado_parto
-(
-	id_estado	TINYINT  NOT NULL,
-	estado_parto	CHAR(1) NOT NULL,
-	CONSTRAINT PK_estado_parto_id_estado
-		PRIMARY KEY(id_estado),
-	CONSTRAINT UNK_estado_parto_estado_parto
-		UNIQUE (estado_parto),	
-);
-go
---*************************tabla de partos****************************
-IF OBJECT_ID('partos', 'U') IS NOT NULL  
-   DROP TABLE partos;  
-go
-CREATE TABLE partos
-(
-	id_partos	INT NOT NULL,
-	id_sexo		TINYINT  NULL,
-	comentario	VARCHAR(40)  NULL,
-	id_parto	TINYINT NULL,
-	id_estado	TINYINT NULL,
-	CONSTRAINT PK_partos_id_partos
-		PRIMARY KEY(id_partos),
-	CONSTRAINT FK_partos_id_partos
-		FOREIGN KEY (id_partos) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
-	CONSTRAINT FK_partos_id_sexo
-		FOREIGN KEY (id_sexo) REFERENCES sexo(id_sexo),
-	CONSTRAINT FK_partos_id_parto
-		FOREIGN KEY (id_parto) REFERENCES tipo_parto(id_parto),
-	CONSTRAINT FK_partos_id_estado
-		FOREIGN KEY (id_estado) REFERENCES estado_parto(id_estado),
-
-);
-go
---*************************tabla de partos_bovinos****************************
-IF OBJECT_ID('partos_bovinos', 'U') IS NOT NULL  
-   DROP TABLE partos_bovinos;  
-go
-CREATE TABLE partos_bovinos
-(
-	id_partos	INT NOT NULL,
-	id_Bovino		INT NOT NULL,
-	CONSTRAINT PK_partos_bovinos_id_partos_id_bovino
-		PRIMARY KEY(id_partos,id_Bovino),
-	CONSTRAINT FK_partos_bovinos_id_partos
-		FOREIGN KEY (id_partos) REFERENCES partos(id_partos) ON UPDATE CASCADE ON DELETE CASCADE,
-	CONSTRAINT FK_partos_bovinos_id_Bovino
-		FOREIGN KEY (id_Bovino) REFERENCES Bovino(id_Bovino),
-);
-go
---*************************tabla de celos****************************
-IF OBJECT_ID('celos', 'U') IS NOT NULL  
-   DROP TABLE celos;  
-go
-CREATE TABLE celos
-(
-	id_celos INT NOT NULL,
-	detalle	VARCHAR(40)  NULL
-	CONSTRAINT PK_celos_id_celos
-		PRIMARY KEY(id_celos),
-	CONSTRAINT FK_celos_id_celos
-		FOREIGN KEY (id_celos) REFERENCES reproduccion(id_reproduccion) ON UPDATE CASCADE ON DELETE CASCADE,
-	
-);
-go
 
 
 /*Procedimientos de ins_empresa_usuario*/
@@ -2047,6 +1886,110 @@ go
 
 
 
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+--Consultas 
+
+GO
+--Seleccionar todo la informacion de todos los Bovinos que se inyectaron  'Para parasitos ext e int' o 'Para parasitos ext'
+Select Bo.*  from 
+	(select b.Color,b.Edad,b.FechaIngreso,b.FechaNacimiento,b.id_Bovino,b.idSexo,b.Nombre,b.Raza,c.NombreColor,r.NombreRaza,vb.idVacunacion
+	from Bovino as b inner join Raza as r on (b.Raza = r.Raza) inner join Color as c on (b.Color = c.Color) inner join 
+	Vacunacion_Bovino as vb ON (b.id_Bovino = vb.idBovino)) as Bo inner join 
+
+
+	(select v.idTipo,v.idVacunacion,t.TipoVacunacion,pv.Nombre,p.Detalle from Vacunacion as v inner join Tipo as t on (v.idVacunacion = t.idTipo) inner join 
+	Producto_Vacunacion as pv on(v.idVacunacion = pv.idVacunacion) inner join Producto as p on (pv.Nombre = p.Nombre)) as Vacu on (Bo.idVacunacion = Vacu.idVacunacion )
+	where Vacu.Detalle = 'Para parasitos ext' or Vacu.Detalle = 'Para parasitos ext e int'
+GO
+--Seleccionar El id,Nombre, raza ,Color,sexo   de todos los animales que se hayan vacunado con el producto Piroflox
+Select Bo.id_Bovino,Bo.Nombre,Bo.NombreRaza,Bo.NombreColor,Bo.idSexo from 
+	(select b.Color,b.Edad,b.FechaIngreso,b.FechaNacimiento,b.id_Bovino,b.idSexo,b.Nombre,b.Raza,c.NombreColor,r.NombreRaza,vb.idVacunacion
+	from Bovino as b inner join Raza as r on (b.Raza = r.Raza) inner join Color as c on (b.Color = c.Color) inner join 
+	Vacunacion_Bovino as vb ON (b.id_Bovino = vb.idBovino)) as Bo inner join 
+
+
+	(select v.idTipo,v.idVacunacion,t.TipoVacunacion,pv.Nombre,p.Detalle from Vacunacion as v inner join Tipo as t on (v.idVacunacion = t.idTipo) inner join 
+	Producto_Vacunacion as pv on(v.idVacunacion = pv.idVacunacion) inner join Producto as p on (pv.Nombre = p.Nombre)) as Vacu on (Bo.idVacunacion = Vacu.idVacunacion )
+	where Vacu.Nombre = 'Piroflox'
+GO
+
+--Reglas especificas para las tablas
+
+--Se crea una regla para que en el campo de sexo solo se puedan ingresar ''H','M'
+go
+create rule DatosSexo as @sexo in ('H','M')
+go
+
+--ahora se vinvula con una tabla en especifico
+
+EXEC sp_bindrule 	'DatosSexo',	'Sexo.sexo_animal'
+
+--Crear una regla para Colores 
+go
+create rule DatosColor as @Color between 0 and 8
+go
+
+EXEC sp_bindrule 	'DatosColor',	'Color.Color'
+
+
+--Crear una regla para Raza
+go
+create rule DatosRaza as @Raza between 0 and 5
+go
+EXEC sp_bindrule 	'DatosRaza',	'Raza.Raza'
+
+
+--Crear una regla para Tipo
+go
+create rule DatosTipo as @Tipo in ('D','E')
+go
+EXEC sp_bindrule 	'DatosTipo',	'Tipo.TipoVacunacion'
+
+--Crear una regla para TipoPartos
+go
+create rule DatosTipoPartos as @TipoPartos in ('A','C','D','N')
+go
+EXEC sp_bindrule 	'DatosTipoPartos',	'tipo_parto.tipo_parto'
+go
+
+
+--Vistas 
+
+--Selecciona toda la infromacion de las Enfermedades Bovinos que ha tenido cada bovino
+go
+Create view EnfermedadesBovinos as
+	Select Bovi.id_Bovino,Bovi.Nombre, Enf.Fecha,Enf.Diagnostico,Enf.Comentario,Enf.Nombre_Sintoma from
+	(select b.id_Bovino,b.Nombre,b.idSexo,b.Color,b.Edad,b.Raza,b.FechaNacimiento,c.NombreColor,r.NombreRaza,eb.Fecha from Bovino as b 
+	inner join Color as c on (b.Color = c.Color)inner join Raza as r on (b.Raza = r.Raza) inner join 
+	Enfermedades_Bovinos as eb on (b.id_Bovino = eb.idBovino)) as Bovi inner join 
+
+	(Select e.Comentario,e.Diagnostico,e.Fecha,s.Nombre_Sintoma from Enfermedades as e inner join Sintomas as s on (e.Fecha = s.Fecha) inner join
+	Nombre_Sintomas as ns on (ns.Nombre_Sintoma = s.Nombre_Sintoma)) as Enf on (Bovi.Fecha = Enf.Fecha) 
+
+go
+
+
+--Crear una vista donde se vea solo las vacas y que tuvieron una enfermedad con su debido  diagnosticos
+go
+Create view HembrasDiagnosticos as
+Select Bovi.id_Bovino,Bovi.Nombre,Bovi.idSexo, Enf.Fecha,Enf.Diagnostico from
+	(select b.id_Bovino,b.Nombre,b.idSexo,b.Color,b.Edad,b.Raza,b.FechaNacimiento,c.NombreColor,r.NombreRaza,eb.Fecha from Bovino as b 
+	inner join Color as c on (b.Color = c.Color)inner join Raza as r on (b.Raza = r.Raza) inner join 
+	Enfermedades_Bovinos as eb on (b.id_Bovino = eb.idBovino)) as Bovi inner join 
+
+	(Select e.Comentario,e.Diagnostico,e.Fecha,s.Nombre_Sintoma from Enfermedades as e inner join Sintomas as s on (e.Fecha = s.Fecha) inner join
+	Nombre_Sintomas as ns on (ns.Nombre_Sintoma = s.Nombre_Sintoma)) as Enf on (Bovi.Fecha = Enf.Fecha ) where idSexo = 0
+
+go
+
+--Comando que se utiliza para mostrar la vista creada
+select * from HembrasDiagnosticos
+
+select * from EnfermedadesBovinos
+GO
+
 /*Vista de la info de celos de los vacas*/
 create view info_celos_bovinos
 as
@@ -2055,6 +1998,78 @@ as
 	 reproduccion as re on (rb.id_reproduccion=re.id_reproduccion) inner join 
 	 celos as ce on (re.id_reproduccion=ce.id_celos)
 go
+
+--Triggers 
+--Validar que la base de datos solo tenga registro de una unica empresa
+
+go
+ create or alter trigger ValidarCantidadEmpresas
+  on  empresa 
+  for insert, update 
+  as
+		declare
+		@Cant_Empresas tinyint,
+		@empresa tinyint;
+
+		set @empresa = (select idEmpresa from inserted);
+		set @Cant_Empresas= (select count(*) from empresa)
+
+		if (@Cant_Empresas > 1)
+		begin
+			RAISERROR('Transaccion denegada debido a que ya existen la única empresa  posible',16,1)
+		rollback;
+		end
+		else
+		begin
+			print('Registro completado')
+		end
+ go
+
+
+
+
+
+--Validar que solo puedan existir 3 registros de usuarios en el sistema 
+go
+ create or alter trigger ValidarCantidadUsuarios
+  on  usuario 
+  for insert, update 
+  as
+		declare
+		@Cant_Usuarios tinyint,
+		@usuario varchar(10);
+
+		set @usuario = (select nombreUsuario from inserted);
+		set @Cant_Usuarios= (select count(*) from usuario)
+
+		if (@Cant_Usuarios > 4)
+		begin
+			RAISERROR('Transaccion denegada debido a que ya existen los 4 posibles registros',16,1)
+		rollback;
+		end
+		else
+		begin
+			print('Registro completado')
+		end
+ go
+
+
+
+--Cursor 1
+
+--indice 1
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
