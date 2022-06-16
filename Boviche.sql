@@ -60,7 +60,7 @@ CREATE TABLE produccion
 go
 
 select * from usuario;
-
+go
 --*************************tabla de pesas****************************
 IF OBJECT_ID('pesas', 'U') IS NOT NULL  
    DROP TABLE pesas;  
@@ -71,15 +71,17 @@ CREATE TABLE pesas
 	fecha			DATE		NOT NULL,
 	kilos_Kl		int			NOT NULL	
 
-	constraint PK_pesas_horario 
-		PRIMARY KEY (horario)
-		
+	constraint PK_pesas_horario_fecha 
+		PRIMARY KEY (horario,fecha),
+
+	constraint FK_pesas_horario
+		foreign key (horario) references horario(horario),
 	constraint FK_pesas_fecha
-		foreign key (fecha) references produccion
+		foreign key (fecha) references produccion,
 );
 go
 select * from pesas;
-
+go
 
 --*************************tabla de horario****************************
 IF OBJECT_ID('horario', 'U') IS NOT NULL  
@@ -90,11 +92,11 @@ CREATE TABLE horario
 	horario				TINYINT	NOT NULL IDENTITY(1,1),
 	especificacion		CHAR(1)	NOT NULL default ('M')
 
-	constraint FK_horario_horario
-		foreign key (horario) references pesas,
+	constraint PK_horario_horario
+		PRIMARY KEY (horario),
 		
 	constraint CHK_especificacion_horario
-		check	(especificacion in ('M','T', 'N'))
+		check	(especificacion in ('M','T', 'N')),
 );
 go	
 
@@ -545,7 +547,7 @@ go
 SET IDENTITY_INSERT horario ON;
 insert into horario (horario, especificacion)
 	values 
-		(8,'M'),
+		(0,'M'),
 		(1,'T'),
 		(2,'N')
 
@@ -591,12 +593,12 @@ go
 
 --Insertar valores en Pesas
 
-insert into pesas values (12,'2000-08-09',10)
-insert into pesas values (24,'2000-08-09',8)
-insert into pesas values (13,'2000-10-08',10)
-insert into pesas values (23,'2000-08-09',8)
-insert into pesas values (15,'2000-11-08',10)
-insert into pesas values (26,'2000-11-08',8)
+insert into pesas (horario,fecha,kilos_Kl) values (0,'2000-08-09',10)
+insert into pesas values (2,'2000-08-09',8)
+insert into pesas values (0,'2000-10-08',10)
+insert into pesas values (3,'2000-08-09',8)
+insert into pesas values (0,'2000-11-08',10)
+insert into pesas values (1,'2000-11-08',8)
 GO
 
 
